@@ -323,14 +323,13 @@ class ChunkTool(wx.BoxSizer, DefaultBaseToolUI):
         panel_width = panel_size.GetWidth()
         if allowed_canvas_height < ideal_path_height:
             panel_width += wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_X)
-        self._button_panel.SetSize(
+        self._button_panel.Layout()
+        self.canvas.place_overlay(
+            self._button_panel,
             wx.Rect(
                 0, canvas_height // 2 - panel_height // 2, panel_width, panel_height
-            )
+            ),
         )
-        self._button_panel.Layout()
-        self._button_panel.Raise()
-        self._button_panel.Refresh(False)
 
     def _draw(self):
         self.canvas.renderer.start_draw()

@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Optional, Any
+import os
 import webbrowser
 import logging
 from threading import Thread
@@ -148,7 +149,28 @@ class EditExtension(wx.Panel, BaseProgram):
             self._temp_msg = None
             self._temp_loading_bar = None
             self._sizer.Clear(True)
-            self._sizer.Add(self._canvas, 1, wx.EXPAND)
+            # The NVIDIA Wayland EGL surface is painted above any widget that
+            # overlaps the canvas. Dock those panels beside the view.
+            if os.environ.get("GDK_BACKEND") == "wayland":
+                face = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
+                dock = wx.ScrolledWindow(self, style=wx.VSCROLL)
+                dock.SetScrollRate(0, 16)
+                dock.SetBackgroundColour(face)
+                dock.SetSizer(wx.BoxSizer(wx.VERTICAL))
+                dock.SetMinSize(wx.Size(280, -1))
+                bottom = wx.Panel(self)
+                bottom.SetBackgroundColour(face)
+                bottom.SetSizer(wx.BoxSizer(wx.HORIZONTAL))
+                self._canvas.attach_wayland_dock(dock, bottom)
+                row = wx.BoxSizer(wx.HORIZONTAL)
+                row.Add(dock, 0, wx.EXPAND)
+                row.Add(self._canvas, 1, wx.EXPAND)
+                column = wx.BoxSizer(wx.VERTICAL)
+                column.Add(row, 1, wx.EXPAND)
+                column.Add(bottom, 0, wx.EXPAND)
+                self._sizer.Add(column, 1, wx.EXPAND)
+            else:
+                self._sizer.Add(self._canvas, 1, wx.EXPAND)
             self._canvas.Show()
             self.Layout()
             # This must be called after the show handler is run

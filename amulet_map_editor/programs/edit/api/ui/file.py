@@ -238,24 +238,23 @@ class FilePanel(EditCanvasContainer):
 
     def _resize(self) -> None:
         version_text_size = self._version_panel.GetBestSize()
-        self._version_panel.SetSize(
-            wx.Rect(0, 0, version_text_size.GetWidth(), version_text_size.GetHeight())
+        self.canvas.place_overlay(
+            self._version_panel,
+            wx.Rect(0, 0, version_text_size.GetWidth(), version_text_size.GetHeight()),
         )
-        self._version_panel.Raise()
 
         self._button_window.Layout()
         window_size = self._button_window.GetBestSize()
         canvas_size = self.canvas.GetSize()
-        self._button_window.SetSize(
+        self.canvas.place_overlay(
+            self._button_window,
             wx.Rect(
                 max(0, canvas_size.GetWidth() - window_size.GetWidth()),
                 0,
                 window_size.GetWidth(),
                 window_size.GetHeight(),
-            )
+            ),
         )
-        self._button_window.Raise()
-        self._button_window.Refresh(False)
 
     def windows(self) -> list[wx.Window]:
         return [self._version_panel, self._button_window]

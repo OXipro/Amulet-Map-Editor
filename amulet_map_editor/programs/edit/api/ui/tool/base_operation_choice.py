@@ -221,19 +221,17 @@ class BaseOperationChoiceToolUI(wx.BoxSizer, BaseToolUI):
         evt.Skip()
 
     def _resize(self):
-        widget = self.canvas.GetParent()
-        widget.Freeze()
         settings_panel_size = self._settings_panel.GetBestSize()
         scale = self.canvas.GetDPIScaleFactor()
-        self._settings_panel.SetSize(
+        self.canvas.place_overlay(
+            self._settings_panel,
             wx.Rect(
                 0,
                 int(24 * scale),
                 settings_panel_size.GetWidth(),
                 settings_panel_size.GetHeight(),
-            )
+            ),
         )
-        self._settings_panel.Raise()
 
         self._operation_panel.Layout()
         panel_size = self._operation_panel.GetBestSize()
@@ -244,13 +242,12 @@ class BaseOperationChoiceToolUI(wx.BoxSizer, BaseToolUI):
         ideal_path_height = panel_size.GetHeight()
         panel_height = min(ideal_path_height, allowed_canvas_height)
         panel_width = panel_size.GetWidth()
-        self._operation_panel.SetSize(
+        self.canvas.place_overlay(
+            self._operation_panel,
             wx.Rect(
                 0,
                 int(24 * scale) + settings_panel_size.GetHeight(),
                 panel_width,
                 panel_height,
-            )
+            ),
         )
-        self._operation_panel.Raise()
-        widget.Thaw()

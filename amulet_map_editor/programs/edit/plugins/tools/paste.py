@@ -732,14 +732,13 @@ class PasteTool(wx.BoxSizer, DefaultBaseToolUI):
         panel_width = panel_size.GetWidth()
         if allowed_canvas_height < ideal_path_height:
             panel_width += wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_X)
-        self._paste_panel.SetSize(
+        self._paste_panel.Layout()
+        self.canvas.place_overlay(
+            self._paste_panel,
             wx.Rect(
                 0, canvas_height // 2 - panel_height // 2, panel_width, panel_height
-            )
+            ),
         )
-        self._paste_panel.Layout()
-        self._paste_panel.Raise()
-        self._paste_panel.Refresh(False)
 
     def _draw(self):
         self.canvas.renderer.start_draw()

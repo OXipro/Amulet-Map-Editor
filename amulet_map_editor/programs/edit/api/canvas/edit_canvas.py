@@ -163,12 +163,64 @@ class EditCanvas(BaseEditCanvas):
 
         self._canvas_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self._canvas_sizer)
+        # On Wayland the EGL subsurface is composited above every sibling that
+        # overlaps this canvas, so overlay panels are docked beside it instead.
+        self._wayland_dock: Optional[wx.ScrolledWindow] = None
+        self._wayland_bottom: Optional[wx.Panel] = None
+        self._overlay_laying_out = False
 
         # Tracks if an operation has been started and not finished.
         self._operation_running = False
         # This lock stops two threads from editing the world simultaneously
         # call run_operation to acquire it.
         self._edit_lock = RLock()
+
+    def attach_wayland_dock(self, dock: wx.ScrolledWindow, bottom: wx.Panel) -> None:
+        """Park overlay panels here so the EGL surface cannot cover them."""
+        self._wayland_dock = dock
+        self._wayland_bottom = bottom
+
+    def layout_overlay(self) -> None:
+        dock = self._wayland_dock
+        if dock is None or self._overlay_laying_out:
+            return
+        self._overlay_laying_out = True
+        try:
+            dock.Layout()
+            dock.FitInside()
+            if self._wayland_bottom is not None:
+                self._wayland_bottom.Layout()
+            parent = dock.GetParent()
+            if parent is not None:
+                parent.Layout()
+        finally:
+            self._overlay_laying_out = False
+
+    def place_overlay(
+        self, window: wx.Window, rect: wx.Rect, *, bottom: bool = False
+    ) -> None:
+        """Position a panel over the canvas, or dock it when that would hide it."""
+        dock = self._wayland_bottom if bottom else self._wayland_dock
+        if self._wayland_dock is None or dock is None:
+            window.SetSize(rect)
+            window.Raise()
+            window.Refresh(False)
+            return
+        if not getattr(window, "_amulet_docked", False):
+            window.Reparent(dock)
+            colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
+            window.SetBackgroundColour(
+                wx.Colour(colour.Red(), colour.Green(), colour.Blue())
+            )
+            flag = wx.ALL | (wx.ALIGN_CENTER if bottom else wx.EXPAND)
+            dock.GetSizer().Add(window, 0, flag, 4)
+            window._amulet_docked = True
+            window.Bind(wx.EVT_SHOW, self._on_docked_show)
+        self.layout_overlay()
+
+    def _on_docked_show(self, evt):
+        evt.Skip()
+        self.layout_overlay()
 
     def _init_opengl(self):
         super()._init_opengl()
